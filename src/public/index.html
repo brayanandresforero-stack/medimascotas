@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Veterinario - API Vet</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; }
+        .selector-box { margin-bottom: 20px; padding: 15px; background: #e8f4f8; border-radius: 5px; }
+        select, button { padding: 8px 12px; font-size: 16px; margin-right: 10px; }
+        button { background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        .card { background: #fff; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Portal de Gestión Veterinaria</h1>
+    
+    <!-- Selector de Veterinario -->
+    <div class="selector-box">
+        <label for="selectVeterinario"><strong>Selecciona un Veterinario:</strong></label>
+        <select id="selectVeterinario">
+            <option value="">Cargando veterinarios...</option>
+        </select>
+        <button onclick="cargarDashboard()">Entrar al Panel</button>
+    </div>
+
+    <!-- Sección de Información (Dashboard) -->
+    <div id="dashboardSection" style="display:none;">
+        <div class="card" id="infoVet">
+            <h2>Información General</h2>
+            <p id="datosVet">Cargando...</p>
+        </div>
+
+        <div class="card">
+            <h2>Empleados de mi Clínica</h2>
+            <table>
+                <thead>
+                    <tr><th>Nombre</th><th>Apellido</th><th>Cargo</th><th>Teléfono</th></tr>
+                </thead>
+                <tbody id="tablaEmpleados">
+                    <tr><td colspan="4">Selecciona un veterinario y entra al panel</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Mis Pacientes (Mascotas Atendidas)</h2>
+            <table>
+                <thead>
+                    <tr><th>Mascota</th><th>Especie</th><th>Raza</th><th>Dueño</th><th>Teléfono Dueño</th></tr>
+                </thead>
+                <tbody id="tablaPacientes">
+                    <tr><td colspan="5">Selecciona un veterinario y entra al panel</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = `${window.location.origin}/api`;
+    // Cargar la lista de veterinarios al iniciar la página
+    async function cargarVeterinarios() {
+        try {
+            const res = await fetch(`${API_URL}/veterinarios`);
+            const json = await res.json();
+            const select = document.getElementById('selectVeterinario');
+            select.innerHTML = '<option value="">-- Seleccione un Veterinario --</option>';
+            
+            if (json.ok && json.data) {
+                json.data.forEach(v => {
+                    select.innerHTML += `<option value="${v.IDVeterinario}">Dr. ${v.Nombre} ${v.Apellido} (ID: ${v.IDVeterinario})</option>`;
+                });
+            }
+        } catch (error) {
+            console.error('Error al cargar veterinarios:', error);
+        }
+    }
+
+    // Cargar toda la información del veterinario seleccionado
+    async function cargarDashboard() {
+        const idVet = document.getElementById('selectVeterinario').value;
+        if (!idVet) {
+            alert('Por favor selecciona un veterinario');
+            return;
+        }
+
+        document.getElementById('dashboardSection').style.display = 'block';
+
+        // 1. Cargar Dashboard (Datos del vet y su clínica)
+        try {
+            const res = await fetch(`${API_URL}/veterinarios/${idVet}/dashboard`);
+            const json = await res.json();
+            if (json.ok) {
+                const d = json.data;
+                document.getElementById('datosVet').innerHTML = `
+                    <strong>Veterinario:</strong> ${d.Nombre} ${d.Apellido} | <strong>Especialidad:</strong> ${d.Especie || d.Especialidad || 'N/A'}<br>
+                    <strong>Clínica Asignada:</strong> ${d.NombreClinica || 'Sin clínica asignada'} | <strong>Dirección:</strong> ${d.direccion || 'N/A'}
+                `;
+            }
+        } catch (e) { console.error(e); }
+
+        // 2. Cargar Empleados de la clínica
+        try {
+            const res = await fetch(`${API_URL}/veterinarios/${idVet}/empleados`);
+            const json = await res.json();
+            const tbody = document.getElementById('tablaEmpleados');
+            tbody.innerHTML = '';
+            
+            if (json.ok && json.data.length > 0) {
+                json.data.forEach(emp => {
+                    tbody.innerHTML += `<tr><td>${emp.nombre}</td><td>${emp.apellido}</td><td>${emp.cargo}</td><td>${emp.telefono || 'N/A'}</td></tr>`;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4">No hay empleados registrados en esta veterinaria.</td></tr>`;
+            }
+        } catch (e) { console.error(e); }
+
+        // 3. Cargar Pacientes atendidos
+        try {
+            const res = await fetch(`${API_URL}/veterinarios/${idVet}/pacientes`);
+            const json = await res.json();
+            const tbody = document.getElementById('tablaPacientes');
+            tbody.innerHTML = '';
+            
+            if (json.ok && json.data.length > 0) {
+                json.data.forEach(p => {
+                    tbody.innerHTML += `<tr><td>${p.Mascota}</td><td>${p.Especie}</td><td>${p.Raza}</td><td>${p.NombreDueno}</td><td>${p.TelefonoDueno}</td></tr>`;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5">No hay pacientes registrados con historial para este veterinario.</td></tr>`;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // Ejecutar al cargar la página
+    cargarVeterinarios();
+</script>
+
+</body>
+</html>

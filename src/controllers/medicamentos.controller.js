@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-// Obtener todos los medicamentos
+// get medicamentos (Existente)
 const getAll = async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM medicamentos');
@@ -10,7 +10,7 @@ const getAll = async (req, res) => {
   }
 };
 
-// Obtener un medicamento por ID
+// get medicamento by ID (Existente)
 const getById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -26,4 +26,23 @@ const getById = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById };
+// NUEVO: Obtener los medicamentos y el stock de una veterinaria específica (Inventario)
+const getInventarioVeterinaria = async (req, res) => {
+  try {
+    const { idVeterinaria } = req.params;
+    const query = `
+      SELECT m.IDMedicamentos, m.NombreMedicamento, m.TipoMedicamento, m.Especie,
+             i.Cantidad AS Stock, i.Precio AS PrecioVenta
+      FROM medicamentos m
+      INNER JOIN inventario i ON m.IDMedicamentos = i.IDMedicamentos
+      WHERE i.IDVeterinaria = ?
+    `;
+    const [rows] = await pool.query(query, [idVeterinaria]);
+    
+    res.json({ ok: true, data: rows });
+  } catch (error) {
+    res.status(500).json({ ok: false, msg: error.message });
+  }
+};
+
+module.exports = { getAll, getById, getInventarioVeterinaria };
