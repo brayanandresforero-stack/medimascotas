@@ -6,6 +6,7 @@ const medicamentosRoutes = require('./routes/medicamentos.routes');
 const veterinariosRoutes = require('./routes/veterinarios.routes');
 const empleadosRoutes = require('./routes/empleados.routes');
 const duenosRoutes = require('./routes/duenos.routes');
+const mascotaRoutes = require('./routes/mascota.routes');
 
 const app = express();
 
@@ -21,5 +22,6 @@ app.use('/api/medicamentos', medicamentosRoutes);
 app.use('/api/veterinarios', veterinariosRoutes);
 app.use('/api/empleados', empleadosRoutes);
 app.use('/api/duenos', duenosRoutes);
+app.use('/api/mascotas', mascotaRoutes);
 
 module.exports = app;
