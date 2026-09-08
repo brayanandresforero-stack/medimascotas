@@ -5,7 +5,6 @@ const registrarEmpleado = async (req, res) => {
   try {
     const { IDVeterinaria, documento, nombre, apellido, email, telefono, cargo, salario } = req.body;
 
-    // Validación básica
     if (!IDVeterinaria || !documento || !nombre || !apellido) {
       return res.status(400).json({ ok: false, msg: 'IDVeterinaria, documento, nombre y apellido son obligatorios' });
     }
@@ -36,4 +35,17 @@ const registrarEmpleado = async (req, res) => {
   }
 };
 
-module.exports = { registrarEmpleado };
+// Obtener empleados filtrados por la veterinaria
+const obtenerEmpleadosPorClinica = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `SELECT * FROM empleados WHERE IDVeterinaria = ?`;
+    const [rows] = await pool.query(query, [id]);
+    
+    res.json({ ok: true, data: rows });
+  } catch (error) {
+    res.status(500).json({ ok: false, msg: error.message });
+  }
+};
+
+module.exports = { registrarEmpleado, obtenerEmpleadosPorClinica };

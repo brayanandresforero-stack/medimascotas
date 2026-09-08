@@ -7,14 +7,15 @@ const veterinariosRoutes = require('./routes/veterinarios.routes');
 const empleadosRoutes = require('./routes/empleados.routes');
 const duenosRoutes = require('./routes/duenos.routes');
 const mascotaRoutes = require('./routes/mascota.routes');
-
+const clinicasRoutes = require('./routes/clinicas.routes');
+const veterinariaRoutes = require('./routes/veterinaria.routes');
 const app = express();
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Servir la interfaz visual desde la carpeta 'public'
+// interfaz visual 
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
@@ -23,5 +24,6 @@ app.use('/api/veterinarios', veterinariosRoutes);
 app.use('/api/empleados', empleadosRoutes);
 app.use('/api/duenos', duenosRoutes);
 app.use('/api/mascotas', mascotaRoutes);
-
+app.use('/api/clinicas', clinicasRoutes);
+app.use('/api/veterinaria', veterinariaRoutes);
 module.exports = app;

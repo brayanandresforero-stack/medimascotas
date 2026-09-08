@@ -6,16 +6,19 @@
     <title>Panel de Veterinario - API Vet</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .container { max-width: 950px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1, h2 { color: #2c3e50; }
         .selector-box { margin-bottom: 20px; padding: 15px; background: #e8f4f8; border-radius: 5px; }
-        select, button { padding: 8px 12px; font-size: 16px; margin-right: 10px; }
+        select, input, button { padding: 8px 12px; font-size: 15px; margin-right: 10px; margin-bottom: 10px; }
         button { background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background: #2980b9; }
+        .btn-edit { background: #e67e22; padding: 5px 10px; font-size: 13px; }
+        .btn-edit:hover { background: #d35400; }
         .card { background: #fff; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        .edit-section { background: #fff8e1; border: 1px solid #ffe0b2; padding: 15px; border-radius: 5px; margin-top: 15px; display: none; }
     </style>
 </head>
 <body>
@@ -55,19 +58,41 @@
             <h2>Mis Pacientes (Mascotas Atendidas)</h2>
             <table>
                 <thead>
-                    <tr><th>Mascota</th><th>Especie</th><th>Raza</th><th>Dueño</th><th>Teléfono Dueño</th></tr>
+                    <tr><th>ID Mascota</th><th>Mascota</th><th>Especie</th><th>Raza</th><th>Dueño (ID)</th><th>Teléfono Dueño</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="tablaPacientes">
-                    <tr><td colspan="5">Selecciona un veterinario y entra al panel</td></tr>
+                    <tr><td colspan="7">Selecciona un veterinario y entra al panel</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Formulario de Edición de Paciente / Dueño -->
+        <div id="editSection" class="edit-section">
+            <h3>Actualizar Datos de Paciente y Dueño</h3>
+            <input type="hidden" id="editIdMascota">
+            <input type="hidden" id="editIdDueno">
+            
+            <div>
+                <label><strong>Nombre Mascota:</strong></label>
+                <input type="text" id="inputNombreMascota">
+                <label><strong>Raza:</strong></label>
+                <input type="text" id="inputRazaMascota">
+            </div>
+            <div>
+                <label><strong>Nombre Dueño:</strong></label>
+                <input type="text" id="inputNombreDueno">
+                <label><strong>Teléfono Dueño:</strong></label>
+                <input type="text" id="inputTelDueno">
+            </div>
+            <button onclick="guardarCambiosPaciente()" style="background: #27ae60;">Guardar Cambios</button>
+            <button onclick="cancelarEdicion()" style="background: #7f8c8d;">Cancelar</button>
         </div>
     </div>
 </div>
 
 <script>
     const API_URL = `${window.location.origin}/api`;
-    // Cargar la lista de veterinarios al iniciar la página
+
     async function cargarVeterinarios() {
         try {
             const res = await fetch(`${API_URL}/veterinarios`);
@@ -85,7 +110,6 @@
         }
     }
 
-    // Cargar toda la información del veterinario seleccionado
     async function cargarDashboard() {
         const idVet = document.getElementById('selectVeterinario').value;
         if (!idVet) {
@@ -94,8 +118,9 @@
         }
 
         document.getElementById('dashboardSection').style.display = 'block';
+        document.getElementById('editSection').style.display = 'none';
 
-        // 1. Cargar Dashboard (Datos del vet y su clínica)
+        // 1. Datos del Veterinario
         try {
             const res = await fetch(`${API_URL}/veterinarios/${idVet}/dashboard`);
             const json = await res.json();
@@ -108,7 +133,7 @@
             }
         } catch (e) { console.error(e); }
 
-        // 2. Cargar Empleados de la clínica
+        // 2. Empleados
         try {
             const res = await fetch(`${API_URL}/veterinarios/${idVet}/empleados`);
             const json = await res.json();
@@ -124,7 +149,7 @@
             }
         } catch (e) { console.error(e); }
 
-        // 3. Cargar Pacientes atendidos
+        // 3. Pacientes (Mascotas y Dueños)
         try {
             const res = await fetch(`${API_URL}/veterinarios/${idVet}/pacientes`);
             const json = await res.json();
@@ -133,17 +158,97 @@
             
             if (json.ok && json.data.length > 0) {
                 json.data.forEach(p => {
-                    tbody.innerHTML += `<tr><td>${p.Mascota}</td><td>${p.Especie}</td><td>${p.Raza}</td><td>${p.NombreDueno}</td><td>${p.TelefonoDueno}</td></tr>`;
+                    // Guardamos los datos en atributos para usarlos al dar clic en Editar
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${p.IDMascota || p.idMascota || 'N/A'}</td>
+                            <td>${p.Mascota}</td>
+                            <td>${p.Especie}</td>
+                            <td>${p.Raza}</td>
+                            <td>${p.NombreDueno} (ID: ${p.IDDueno || p.idDueno || 'N/A'})</td>
+                            <td>${p.TelefonoDueno}</td>
+                            <td>
+                                <button class="btn-edit" onclick='prepararEdicion(${JSON.stringify(p)})'>Editar</button>
+                            </td>
+                        </tr>`;
                 });
             } else {
-                tbody.innerHTML = `<tr><td colspan="5">No hay pacientes registrados con historial para este veterinario.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7">No hay pacientes registrados con historial para este veterinario.</td></tr>`;
             }
         } catch (e) { console.error(e); }
     }
 
-    // Ejecutar al cargar la página
+    function prepararEdicion(p) {
+        document.getElementById('editSection').style.display = 'block';
+        document.getElementById('editIdMascota').value = p.IDMascota || p.idMascota || '';
+        document.getElementById('editIdDueno').value = p.IDDueno || p.idDueno || '';
+        
+        document.getElementById('inputNombreMascota').value = p.Mascota || '';
+        document.getElementById('inputRazaMascota').value = p.Raza || '';
+        document.getElementById('inputNombreDueno').value = p.NombreDueno || '';
+        document.getElementById('inputTelDueno').value = p.TelefonoDueno || '';
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function cancelarEdicion() {
+        document.getElementById('editSection').style.display = 'none';
+    }
+
+    async function guardarCambiosPaciente() {
+        const idMascota = document.getElementById('editIdMascota').value;
+        const idDueno = document.getElementById('editIdDueno').value;
+
+        const dataMascota = {
+            nombre: document.getElementById('inputNombreMascota').value,
+            raza: document.getElementById('inputRazaMascota').value
+        };
+
+        const dataDueno = {
+            nombre: document.getElementById('inputNombreDueno').value,
+            telefono: document.getElementById('inputTelDueno').value
+        };
+
+        try {
+            // Actualizar Mascota
+            const resMascota = await fetch(`${API_URL}/mascotas/${idMascota}`, {
+                method: 'PUT', // o PATCH según tu backend
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataMascota)
+            });
+
+            // Actualizar Dueño
+            const resDueno = await fetch(`${API_URL}/duenos/${idDueno}`, {
+                method: 'PUT', // o PATCH según tu backend
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataDueno)
+            });
+
+            const jsonM = await resMascota.json();
+            const jsonD = await resDueno.json();
+
+            if (jsonM.ok && jsonD.ok) {
+                alert('¡Datos de la mascota y del dueño actualizados correctamente!');
+                document.getElementById('editSection').style.display = 'none';
+                cargarDashboard(); // Recarga la tabla con los datos nuevos
+            } else {
+                alert('Error al actualizar algunos de los datos.');
+            }
+        } catch (error) {
+            console.error('Error en la actualización:', error);
+            alert('Ocurrió un error de red al intentar actualizar.');
+        }
+    }
+
+    // Cargar la lista al iniciar
     cargarVeterinarios();
 </script>
 
 </body>
 </html>
+
+<div style="margin-bottom: 20px; text-align: right;">
+    <a href="registro-empleado.html">
+        <button style="background: #27ae60;">Registrarse como Empleado</button>
+    </a>
+</div>

@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const ctrl = require('../controllers/duenos.controller');
+const ctrl = require('../controllers/empleados.controller');
 
-// Ruta para que un dueño se registre (POST)
-router.post('/registro', ctrl.registrarDueno);
+// Ruta para registrar un empleado
+router.post('/registro', ctrl.registrarEmpleado);
+router.get('/clinica/:id', ctrl.obtenerEmpleadosPorClinica);
 
 module.exports = router;
