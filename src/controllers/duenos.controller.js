@@ -12,10 +12,10 @@ const registrarDueno = async (req, res) => {
     const query = `INSERT INTO dueñomascota (Nombre, Apellido, Direccion, Telefono) VALUES (?, ?, ?, ?)`;
     const [result] = await pool.query(query, [Nombre, Apellido, Direccion || null, Telefono]);
 
-    res.status(201).json({ 
-      ok: true, 
-      msg: 'Dueño registrado exitosamente', 
-      IdDueño: result.insertId 
+    res.status(201).json({
+      ok: true,
+      msg: 'Dueño registrado exitosamente',
+      IdDueño: result.insertId
     });
   } catch (error) {
     res.status(500).json({ ok: false, msg: error.message });
@@ -41,4 +41,41 @@ const actualizarDueno = async (req, res) => {
   }
 };
 
-module.exports = { registrarDueno, actualizarDueno };
+// Obtener todos los dueños
+const getAll = async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM dueñomascota');
+    res.json({ ok: true, data: rows });
+  } catch (error) {
+    res.status(500).json({ ok: false, msg: error.message });
+  }
+};
+
+// Obtener un dueño por ID, junto con sus mascotas
+const getMisMascotas = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [dueno] = await pool.query('SELECT * FROM dueñomascota WHERE IdDueño = ?', [id]);
+    if (dueno.length === 0) {
+      return res.status(404).json({ ok: false, msg: 'Dueño no encontrado' });
+    }
+
+    const query = `
+      SELECT m.IDMascota, m.Nombre, m.Especie, m.Raza, m.Genero
+      FROM mascota m
+      WHERE m.IdDueño = ?
+    `;
+    const [mascotas] = await pool.query(query, [id]);
+
+    res.json({
+      ok: true,
+      dueno: dueno[0],
+      mascotas: mascotas
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, msg: error.message });
+  }
+};
+
+module.exports = { registrarDueno, actualizarDueno, getAll, getMisMascotas };
