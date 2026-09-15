@@ -10,7 +10,6 @@ const registrarDueno = async (req, res) => {
     }
 
     const query = `INSERT INTO dueñomascota (Nombre, Apellido, Direccion, Telefono) VALUES (?, ?, ?, ?)`;
-
     const [result] = await pool.query(query, [Nombre, Apellido, Direccion || null, Telefono]);
 
     res.status(201).json({
