@@ -27,3 +27,4 @@ app.use('/api/mascotas', mascotaRoutes);
 app.use('/api/clinicas', clinicasRoutes);
 app.use('/api/veterinaria', veterinariaRoutes);
 module.exports = app;
+
